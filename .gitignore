@@ -1,0 +1,10 @@
+﻿node_modules/
+*/node_modules/
+.env
+.env.local
+auth-server/.env
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

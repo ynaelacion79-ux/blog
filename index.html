@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wendell's Recipe | Cooking Blog</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .recipe-rating .star {
+      font-size: 1.5em;
+      color: #ccc;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .recipe-rating .star.selected,
+    .recipe-rating .star.hovered {
+      color: gold;
+    }
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0; width: 100%; height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.5);
+    }
+    .modal-content {
+      background: #fff;
+      margin: 5% auto;
+      padding: 2em;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 500px;
+      position: relative;
+    }
+
+    /* region badges */
+    .region-badge {
+      display:inline-block;
+      padding:0.18em 0.6em;
+      border-radius:12px;
+      font-size:0.8em;
+      font-weight:600;
+      margin-left:0.6em;
+      vertical-align:middle;
+    }
+    .region-luzon { background:#4CAF50; color:#fff; }
+    .region-visayas { background:#FF9800; color:#fff; }
+    .region-mindanao { background:#2196F3; color:#fff; }
+  </style>
+</head>
+<body>
+<div id="auth-modal" style="position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;">
+  <div style="background:#fff;padding:2em;border-radius:10px;max-width:350px;width:100%;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
+    <h2 id="auth-title">Login</h2>
+    <form id="auth-form">
+      <div class="form-group">
+        <input type="email" id="auth-email" placeholder="Email" required style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-name-group" style="display:none;">
+        <input type="text" id="auth-name" placeholder="Full name" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-username-group" style="display:none;">
+        <input type="text" id="auth-username" placeholder="Username (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-phone-group" style="display:none;">
+        <input type="tel" id="auth-phone" placeholder="Phone (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-location-group" style="display:none;">
+        <input type="text" id="auth-location" placeholder="Location (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-bio-group" style="display:none;">
+        <textarea id="auth-bio" placeholder="Short bio (optional)" rows="3" style="width:100%;padding:0.5em;margin-bottom:1em;"></textarea>
+      </div>
+      <div class="form-group" id="auth-avatar-group" style="display:none;">
+        <input type="url" id="auth-avatar" placeholder="Avatar image URL (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group">
+        <input type="password" id="auth-password" placeholder="Password" required style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <div class="form-group" id="auth-confirm-group" style="display:none;">
+        <input type="password" id="auth-confirm-password" placeholder="Confirm password" style="width:100%;padding:0.5em;margin-bottom:1em;">
+      </div>
+      <button type="submit" class="btn-submit" style="width:100%;margin-bottom:1em;">Login</button>
+    </form>
+    <p id="auth-switch" style="text-align:center;cursor:pointer;color:#007bff;">Don't have an account? Register</p>
+    <p id="auth-error" style="color:red;text-align:center;display:none;"></p>
+  </div>
+</div>
+
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">
+          <i class="fas fa-utensils"></i>
+          Wendell's Recipe
+        </div>
+        <div id="user-info" style="display:none;align-items:center;gap:0.5em;margin-left:1rem;">
+          <img id="user-avatar" src="" alt="avatar" style="width:32px;height:32px;border-radius:50%;display:none;object-fit:cover;">
+          <span id="user-name" style="font-weight:600;display:none;"></span>
+        </div>
+        <nav>
+          <ul>
+            <li><a href="#" class="nav-link active" data-target="home">Home</a></li>
+            <li><a href="#" class="nav-link" data-target="recipes">Recipes</a></li>
+            <li><a href="#" class="nav-link" data-target="about">About</a></li>
+            <li><a href="#" class="nav-link" data-target="contact">Contact</a></li>
+            <li><button id="open-auth-btn" aria-label="Open login" style="background:none;border:none;color:#007bff;cursor:pointer;display:flex;align-items:center;gap:0.4rem;"><i class="fas fa-user" aria-hidden="true" style="font-size:1rem;"></i><span>Login / Register</span></button></li>
+            <li><button id="logout-btn" style="background:none;border:none;color:#007bff;cursor:pointer;display:none;">Logout</button></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>Delicious Recipes for Every Occasion</h1>
+      <p>Discover amazing dishes from around the world and elevate your cooking skills</p>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container">
+    <!-- Home Section -->
+    <section id="home" class="content-section active">
+      <h2 class="section-title">Welcome to Wendell's Recipe</h2>
+
+      <!-- Featured (limited) -->
+      <div class="recipes-grid">
+        <div class="recipe-card">
+          <img src="adobo.jpg" alt="Delicious filipino dish" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Adobo</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 30 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Try our very own Filipino food adobo.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card">
+          <img src="pancit.jpg" alt="Pancit Canton" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Pancit Canton</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 30 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Stir-fried egg noodles with vegetables, meat, and shrimp.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card">
+          <img src="halo halo.jpg" alt="Halo-Halo" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Halo-Halo</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 15 mins</span>
+              <span><i class="fas fa-user"></i> 2 servings</span>
+            </div>
+            <p class="recipe-description">Sweet layered dessert with shaved ice and milk.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card">
+          <img src="lechon.jpg" alt="Lechon" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Lechon</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 180 mins</span>
+              <span><i class="fas fa-user"></i> 8-10 servings</span>
+            </div>
+            <p class="recipe-description">Crispy whole roasted pig — a Filipino celebration classic.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card">
+          <img src="Sinigang.jpg" alt="Sinigang" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Sinigang</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 40 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Tamarind-based sour soup with vegetables and meat/seafood.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card">
+          <img src="kare kare.jpg" alt="Kare-Kare" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Kare-Kare</h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 90 mins</span>
+              <span><i class="fas fa-user"></i> 6 servings</span>
+            </div>
+            <p class="recipe-description">Rich peanut-based stew usually served with bagoong.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section> <!-- end Home section -->
+
+    <!-- About Section -->
+    <section id="about" class="about-section content-section">
+      <h2 class="section-title">About Wendell's Recipe</h2>
+      <div class="about-content">
+        <p>Welcome to <strong>Wendell's Recipe</strong> — a cozy corner for home cooks who love simple, authentic Filipino dishes. Our mission is to share approachable recipes, cooking tips, and stories that bring people together around the table.</p>
+        <p>Whether you're a beginner or an experienced cook, you'll find step-by-step recipes, clear ingredient lists, and practical advice to help you make delicious meals at home. We focus on flavor, tradition, and easy-to-follow techniques.</p>
+        <p><em>"Bringing the taste of home to your kitchen."</em></p>
+      </div>
+    </section>
+
+    <!-- Recipes Section -->
+    <section id="recipes" class="content-section">
+      <h2 class="section-title">All Recipes</h2>
+      <div class="recipes-grid">
+        <!-- Classic Filipino Dishes -->
+        <div class="recipe-card"><img src="adobo.jpg" alt="Adobo" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Adobo <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 30 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Try our very own Filipino food adobo.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="chop suey.jpg" alt="Chop Suey" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Chop Suey <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 25 mins</span><span><i class="fas fa-user"></i> 3-5 servings</span></div><p class="recipe-description">Tasty, healthy vegetable stir-fry with meat and shrimp.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="halo halo.jpg" alt="Halo-Halo" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Halo-Halo <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 15 mins</span><span><i class="fas fa-user"></i> 2 servings</span></div><p class="recipe-description">Sweet layered dessert with shaved ice and milk.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="kare kare.jpg" alt="Kare-Kare" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Kare-Kare <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 90 mins</span><span><i class="fas fa-user"></i> 6 servings</span></div><p class="recipe-description">Rich peanut-based stew usually served with bagoong.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="Sinigang.jpg" alt="Sinigang" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Sinigang <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 40 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Tamarind-based sour soup with vegetables and meat/seafood.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="lechon kawali.jpg" alt="Lechon Kawali" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Lechon Kawali <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 120 mins</span><span><i class="fas fa-user"></i> 4-6 servings</span></div><p class="recipe-description">Crispy pan-fried pork belly best served with vinegar dip.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="pancit.jpg" alt="Pancit Canton" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Pancit Canton <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 30 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Stir-fried egg noodles with vegetables, meat, and shrimp.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="lumpiang shanghai.jpg" alt="Lumpiang Shanghai" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Lumpiang Shanghai <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 6-8 servings</span></div><p class="recipe-description">Crispy spring rolls filled with seasoned ground pork.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="lechon.jpg" alt="Lechon" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Lechon <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 180 mins</span><span><i class="fas fa-user"></i> 8-10 servings</span></div><p class="recipe-description">Crispy whole roasted pig — a Filipino celebration classic.</p><div class="recipe-rating"><span class="star" data-value="1">&#9733;</span><span class="star" data-value="2">&#9733;</span><span class="star" data-value="3">&#9733;</span><span class="star" data-value="4">&#9733;</span><span class="star" data-value="5">&#9733;</span></div></div></div>
+
+        <div class="recipe-card"><img src="tinola.jpg" alt="Tinola" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Tinola <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 40 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Ginger-based chicken soup with papaya and chili leaves.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Bicol Express.jpg" alt="Bicol Express" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Bicol Express <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4-6 servings</span></div><p class="recipe-description">Spicy coconut milk pork stew with chilies and bagoong.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="kinilaw.jpg" alt="Kinilaw" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Kinilaw <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 20 mins</span><span><i class="fas fa-user"></i> 2-4 servings</span></div><p class="recipe-description">Filipino ceviche — fresh fish marinated in vinegar, ginger and chili.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Pancit Palabok.jpg" alt="Pancit Palabok" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Pancit Palabok <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4-6 servings</span></div><p class="recipe-description">Rice noodles in savory shrimp-based sauce topped with chicharrón and egg.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Bulalo.jpg" alt="Bulalo" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Bulalo <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 150 mins</span><span><i class="fas fa-user"></i> 6 servings</span></div><p class="recipe-description">Beef shank soup with marrow — hearty and comforting.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="pinakbet.jpg" alt="Pinakbet" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Pinakbet <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 35 mins</span><span><i class="fas fa-user"></i> 4-6 servings</span></div><p class="recipe-description">Vegetable stew with bagoong — bitter melon, eggplant, squash and okra.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regional and Specialties -->
+        <div class="recipe-card"><img src="dinakdakan.jpg" alt="Dinakdakan" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Dinakdakan <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 50 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Grilled pork face and ears, Ilocano-style, with onions and chili.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="tocino.jpg" alt="Tocino" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Tocino <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 30 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Sweet cured pork, a Filipino breakfast favorite.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="sisig.jpg" alt="Sisig" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Sisig <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 40 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Sizzling chopped pork with onions, chili, and calamansi.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="lomi.jpg" alt="Lomi" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Lomi <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Thick egg noodle soup with pork, shrimp, and vegetables.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Pancit habhab.jpg" alt="Pancit Habhab" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Pancit Habhab <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 30 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Lucban's famous noodles, traditionally eaten on banana leaf.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="laing.jpg" alt="Laing" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Laing <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 60 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Taro leaves stewed in coconut milk and chili.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="arroz caldo.jpg" alt="Arroz Caldo" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Arroz Caldo <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 50 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Ginger chicken rice porridge, Filipino comfort food.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="hanging rice.jpg" alt="Hanging Rice (Puso)" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Hanging Rice (Puso) <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 2 servings</span></div><p class="recipe-description">Rice cooked in coconut leaves, heart-shaped and steamed.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Chicken Halang-halang.jpg" alt="Chicken Halang-Halang" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Chicken Halang-Halang <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 50 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Spicy Visayan chicken stew with coconut milk and chili.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Laz Paz Batchoy.jpg" alt="La Paz Batchoy" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">La Paz Batchoy <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 60 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Iloilo's noodle soup with pork, liver, and chicharrón.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="binakol.jpg" alt="Binakol" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Binakol <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Fish cooked in coconut water with ginger, wrapped in banana leaves.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="chicken inasal.jpg" alt="Chicken Inasal" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Chicken Inasal <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Grilled chicken marinated in vinegar, garlic and turmeric.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="diwa.jpg" alt="Diwal (Angel Wings Clam)" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Diwal (Angel Wings Clam) <span class="region-badge region-luzon">Luzon</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 30 mins</span><span><i class="fas fa-user"></i> 3-4 servings</span></div><p class="recipe-description">Steamed or sautéed small clams with garlic and butter.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="humba bisaya.jpg" alt="Humba Bisaya" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Humba Bisaya <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 60 mins</span><span><i class="fas fa-user"></i> 6 servings</span></div><p class="recipe-description">Sweet and savory braised pork with pineapple and black beans.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Bacolod Back-Ribs.jpg" alt="Bacolod Back-Ribs" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Bacolod Back-Ribs <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 90 mins</span><span><i class="fas fa-user"></i> 4-6 servings</span></div><p class="recipe-description">Grilled pork ribs with sweet BBQ sauce and spices.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="Inadobong pusit.jpg" alt="Inadobong Pusit" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Inadobong Pusit <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Squid cooked adobo-style with vinegar and soy sauce.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="paklay.jpg" alt="Paklay" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Paklay <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 50 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Fish and vegetables cooked in foil with turmeric and garlic.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="recipe-card"><img src="tinolang manok bisaya.jpg" alt="Tinolang Manok Bisaya" class="recipe-img"><div class="recipe-content"><h3 class="recipe-title">Tinolang Manok Bisaya <span class="region-badge region-visayas">Visayas</span></h3><div class="recipe-meta"><span><i class="fas fa-clock"></i> 45 mins</span><span><i class="fas fa-user"></i> 4 servings</span></div><p class="recipe-description">Ginger chicken soup with papaya, Visayan style.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add these new recipe cards to the Recipes section's .recipes-grid, after the last existing .recipe-card -->
+        <div class="recipe-card">
+          <img src="Pastil.jpg" alt="Pastil" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Pastil <span class="region-badge region-mindanao">Mindanao</span></h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 30 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Steamed rice topped with shredded spiced chicken, wrapped in banana leaf.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <img src="satti.jpg" alt="Satti" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Satti <span class="region-badge region-mindanao">Mindanao</span></h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 40 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Grilled skewered meat served with spicy, tangy sauce and rice.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <img src="Pyanggang Manok.jpg" alt="Pyanggang Manok" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Pyanggang Manok <span class="region-badge region-mindanao">Mindanao</span></h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 60 mins</span>
+              <span><i class="fas fa-user"></i> 4 servings</span>
+            </div>
+            <p class="recipe-description">Chicken stewed in coconut milk and burnt coconut, Tausug specialty.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <img src="Beef Kulma.jpg" alt="Beef Kulma" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Beef Kulma <span class="region-badge region-mindanao">Mindanao</span></h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 90 mins</span>
+              <span><i class="fas fa-user"></i> 6 servings</span>
+            </div>
+            <p class="recipe-description">Maranao beef curry with coconut milk, peanuts, and spices.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+        <div class="recipe-card">
+          <img src="Biryani (Cotabato).jpg" alt="Biryani (Cotabato)" class="recipe-img">
+          <div class="recipe-content">
+            <h3 class="recipe-title">Biryani (Cotabato) <span class="region-badge region-mindanao">Mindanao</span></h3>
+            <div class="recipe-meta">
+              <span><i class="fas fa-clock"></i> 90 mins</span>
+              <span><i class="fas fa-user"></i> 6 servings</span>
+            </div>
+            <p class="recipe-description">Spiced rice dish with beef or chicken, Cotabato-style biryani.</p>
+            <div class="recipe-rating">
+              <span class="star" data-value="1">&#9733;</span>
+              <span class="star" data-value="2">&#9733;</span>
+              <span class="star" data-value="3">&#9733;</span>
+              <span class="star" data-value="4">&#9733;</span>
+              <span class="star" data-value="5">&#9733;</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact-section content-section">
+      <h2 class="section-title">Contact Us</h2>
+      <div class="contact-grid" style="display:flex;gap:2rem;flex-wrap:wrap;">
+        <div class="contact-info" style="flex:1;min-width:220px;">
+          <p><strong>Email:</strong> <a href="mailto:info@wendellsrecipe.com">info@wendellsrecipe.com</a></p>
+          <p><strong>Phone:</strong> +63 912 345 6789</p>
+          <p><strong>Address:</strong> 123 Food Street, Manila, Philippines</p>
+        </div>
+        <div class="contact-form-wrap" style="flex:1;min-width:260px;">
+          <form id="contact-form" style="max-width:480px;">
+            <div class="form-group"><input type="text" id="contact-name" placeholder="Your name" required style="width:100%;padding:0.5em;margin-bottom:0.5em;"></div>
+            <div class="form-group"><input type="email" id="contact-email" placeholder="Your email" required style="width:100%;padding:0.5em;margin-bottom:0.5em;"></div>
+            <div class="form-group"><textarea id="contact-message" placeholder="Your message" rows="5" required style="width:100%;padding:0.5em;margin-bottom:0.5em;"></textarea></div>
+            <button type="submit" class="btn-submit" style="padding:0.6em 1em;">Send Message</button>
+          </form>
+          <div style="margin-top:1em;max-width:480px;">
+            <h4>Subscribe</h4>
+            <form id="subscribe-form" style="display:flex;gap:0.5em;">
+              <input type="email" id="subscribe-email" placeholder="Enter your email" required style="flex:1;padding:0.5em;">
+              <button type="submit" class="btn-submit" style="padding:0.5em;">Subscribe</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal for Recipe Details -->
+  <div id="recipe-modal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" style="float:right;cursor:pointer;font-size:1.5em;">&times;</span>
+      <h2 id="modal-title"></h2>
+      <h4>Ingredients:</h4>
+      <ul id="modal-ingredients"></ul>
+      <h4>Steps:</h4>
+      <ol id="modal-steps"></ol>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About Us</h3>
+          <p>Delicious recipes and cooking tips for everyone. Cook, eat, enjoy!</p>
+        </div>
+        <div class="footer-section">
+          <h3>Follow Us</h3>
+          <div class="social-icons">
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-instagram"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        &copy; 2025 Wendell's Recipe | All Rights Reserved
+      </div>
+    </div>
+  </footer>
+
+  <!-- CONSOLIDATED FIREBASE & MAIN SCRIPT -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyA7AKcHEOx1Dhbs6npPmgYUaCBlo7Fk_Nc",
+      authDomain: "blog01-171ec.firebaseapp.com",
+      projectId: "blog01-171ec",
+      storageBucket: "blog01-171ec.appspot.com",
+      messagingSenderId: "959236144177",
+      appId: "1:959236144177:web:ccab245b211aae3d5ce910",
+      measurementId: "G-M5WJYQFQKG"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // ===== AUTH MODAL LOGIC =====
+    const authModal = document.getElementById('auth-modal');
+    const authForm = document.getElementById('auth-form');
+    const authTitle = document.getElementById('auth-title');
+    const authSwitch = document.getElementById('auth-switch');
+    const authError = document.getElementById('auth-error');
+    let isLogin = true;
+
+    function showError(msg) {
+      authError.textContent = msg;
+      authError.style.display = 'block';
+    }
+
+    function clearError() {
+      authError.textContent = '';
+      authError.style.display = 'none';
+    }
+
+    authSwitch.addEventListener('click', () => {
+      isLogin = !isLogin;
+      authTitle.textContent = isLogin ? 'Login' : 'Register';
+      authForm.querySelector('button').textContent = isLogin ? 'Login' : 'Register';
+      authSwitch.textContent = isLogin ? "Don't have an account? Register" : "Already have an account? Login";
+      clearError();
+
+      const groups = ['auth-name-group', 'auth-confirm-group', 'auth-username-group', 'auth-phone-group', 'auth-location-group', 'auth-bio-group', 'auth-avatar-group'];
+      groups.forEach(id => document.getElementById(id).style.display = isLogin ? 'none' : '');
+      document.getElementById('auth-name').required = !isLogin;
+      document.getElementById('auth-confirm-password').required = !isLogin;
+    });
+
+    authForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearError();
+
+      const email = document.getElementById('auth-email').value.trim();
+      const password = document.getElementById('auth-password').value.trim();
+      const name = document.getElementById('auth-name')?.value.trim() || '';
+      const confirm = document.getElementById('auth-confirm-password')?.value.trim() || '';
+      const username = document.getElementById('auth-username')?.value.trim() || '';
+      const phone = document.getElementById('auth-phone')?.value.trim() || '';
+      const location = document.getElementById('auth-location')?.value.trim() || '';
+      const bio = document.getElementById('auth-bio')?.value.trim() || '';
+      const avatar = document.getElementById('auth-avatar')?.value.trim() || '';
+
+      try {
+        if (isLogin) {
+          const res = await fetch('http://localhost:4000/api/login', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ email, password })
+          });
+          const data = await res.json();
+          // save data.token and data.user
+
+          authModal.style.display = 'none';
+          document.body.style.overflow = '';
+        } else {
+          if (!name) return showError('Please enter your full name.');
+          if (password.length < 6) return showError('Password must be at least 6 characters.');
+          if (password !== confirm) return showError('Passwords do not match.');
+
+          const res = await fetch('http://localhost:4000/api/register', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ name, email, password })
+          });
+          const data = await res.json();
+          // save data.token to localStorage and use it for authenticated requests
+
+          try {
+            await updateProfile(auth.currentUser, { displayName: name, ...(avatar && { photoURL: avatar }) });
+          } catch (err) {
+            console.warn('updateProfile failed', err);
+          }
+
+          try {
+            await addDoc(collection(db, 'users'), {
+              uid: userCredential.user.uid,
+              name, username: username || null, phone: phone || null, location: location || null, bio: bio || null, avatar: avatar || null,
+              email, createdAt: serverTimestamp()
+            });
+          } catch (err) {
+            console.warn('Firestore save failed', err);
+          }
+
+          await signOut(auth);
+
+          isLogin = true;
+          authTitle.textContent = 'Login';
+          authForm.querySelector('button').textContent = 'Login';
+          authSwitch.textContent = "Don't have an account? Register";
+          ['auth-name-group', 'auth-confirm-group', 'auth-username-group', 'auth-phone-group', 'auth-location-group', 'auth-bio-group', 'auth-avatar-group'].forEach(id => document.getElementById(id).style.display = 'none');
+          document.getElementById('auth-password').value = '';
+          document.getElementById('auth-confirm-password').value = '';
+          document.getElementById('auth-name').required = false;
+          document.getElementById('auth-confirm-password').required = false;
+
+          authError.style.color = 'green';
+          showError('Registration successful. Please log in with your new account.');
+          setTimeout(() => { clearError(); authError.style.color = 'red'; }, 5000);
+        }
+      } catch (err) {
+        showError(err?.message?.replace('Firebase: ', '') || String(err));
+      }
+    });
+
+    // don't force the auth modal to show on page load; allow browsing without signing in
+
+    onAuthStateChanged(auth, (user) => {
+      const openAuthBtn = document.getElementById('open-auth-btn');
+      if (user) {
+        authModal.style.display = 'none';
+        document.body.style.overflow = '';
+        document.getElementById('logout-btn').style.display = '';
+        if (openAuthBtn) openAuthBtn.style.display = 'none';
+        document.getElementById('user-info').style.display = 'flex';
+        document.getElementById('user-name').textContent = user.displayName || user.email.split('@')[0];
+        if (user.photoURL) {
+          document.getElementById('user-avatar').src = user.photoURL;
+          document.getElementById('user-avatar').style.display = '';
+        }
+      } else {
+        // keep the modal hidden by default for guests; allow browsing without signing in
+        authModal.style.display = 'none';
+        document.body.style.overflow = '';
+        document.getElementById('logout-btn').style.display = 'none';
+        if (openAuthBtn) openAuthBtn.style.display = '';
+        document.getElementById('user-info').style.display = 'none';
+      }
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+    const openAuthBtn = document.getElementById('open-auth-btn');
+    if (openAuthBtn) {
+      openAuthBtn.addEventListener('click', () => {
+        authModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      });
+    }
+
+    // ===== STAR RATING & FIRESTORE =====
+    document.addEventListener('DOMContentLoaded', () => {
+      document.querySelectorAll('.recipe-card').forEach(card => {
+        const ratingDiv = card.querySelector('.recipe-rating');
+        const stars = ratingDiv.querySelectorAll('.star');
+        // extract only the plain title text (ignore region badge spans)
+        const titleElem = card.querySelector('.recipe-title');
+        const recipeTitle = (titleElem && titleElem.childNodes && titleElem.childNodes[0] && titleElem.childNodes[0].nodeType === Node.TEXT_NODE)
+          ? titleElem.childNodes[0].textContent.trim()
+          : (titleElem ? titleElem.textContent.trim() : '');
+
+        stars.forEach((star, idx) => {
+          star.addEventListener('mouseenter', () => stars.forEach((s, i) => s.classList.toggle('hovered', i <= idx)));
+          star.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hovered')));
+          star.addEventListener('click', async () => {
+            stars.forEach((s, i) => s.classList.toggle('selected', i <= idx));
+            try {
+              await addDoc(collection(db, 'ratings'), { recipe: recipeTitle, rating: idx + 1, timestamp: serverTimestamp() });
+              alert(`You rated ${recipeTitle} ${idx + 1} star(s)!`);
+            } catch (error) {
+              alert('Failed to save rating.');
+            }
+          });
+        });
+        ratingDiv.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hovered')));
+      });
+
+      // ===== RECIPE MODAL =====
+      const recipes = {
+        "Adobo": { ingredients: ["1 kg chicken or pork", "1/2 cup soy sauce", "1/2 cup vinegar", "1 head garlic, minced", "2 bay leaves", "1 tsp peppercorns", "1 cup water", "Salt and pepper to taste"], steps: ["Combine meat, soy sauce, vinegar, garlic, bay leaves, and peppercorns in a pot.", "Marinate for at least 30 minutes.", "Bring to a boil, then simmer for 30-40 minutes until meat is tender.", "Add water if needed. Season with salt and pepper.", "Serve hot with rice."] },
+        "Chop Suey": { ingredients: ["2 tbsp oil", "1 onion, sliced", "2 cloves garlic, minced", "1 cup chicken breast, sliced", "1 cup mixed vegetables", "1 tbsp oyster sauce", "1/2 cup water", "Salt and pepper to taste"], steps: ["Heat oil in a pan. Sauté onion and garlic.", "Add chicken and cook until no longer pink.", "Add vegetables and stir-fry for 3-5 minutes.", "Add oyster sauce and water. Simmer until veggies are tender.", "Season with salt and pepper. Serve hot."] },
+        "Halo-Halo": { ingredients: ["Shaved ice", "Sweetened beans", "Nata de coco", "Jackfruit", "Leche flan", "Ube halaya", "Evaporated milk", "Sugar", "Ice cream (optional)"], steps: ["In a tall glass, layer sweetened beans, nata de coco, jackfruit, and other desired ingredients.", "Add shaved ice on top.", "Pour evaporated milk and sugar over the ice.", "Top with leche flan, ube halaya, and ice cream if desired.", "Mix well before eating."] },
+        "Kare-Kare": { ingredients: ["1 kg oxtail", "1/2 cup peanut butter", "1/4 cup bagoong", "1 onion, chopped", "4 cloves garlic, minced", "1/2 tsp pepper", "1/4 tsp salt", "4 cups water", "1 banana flower, sliced (optional)", "1 cup string beans", "1 cup eggplant, sliced", "1/2 cup peanuts, crushed"], steps: ["In a pot, boil oxtail until tender. Remove and set aside.", "In the same pot, sauté onion and garlic until fragrant.", "Add peanut butter and bagoong. Mix well.", "Return oxtail to the pot. Add water, pepper, and salt. Simmer for 30 minutes.", "Add banana flower, string beans, and eggplant. Cook until vegetables are tender.", "Serve hot, garnished with crushed peanuts."] },
+        "Sinigang": { ingredients: ["1 kg pork", "8 cups water", "1 onion, quartered", "2 tomatoes, quartered", "1 radish (labanos), sliced", "1 cup string beans", "2-3 green chili peppers", "1/2 cup tamarind paste", "Fish sauce (patis) to taste", "Salt and pepper to taste", "2 green onions, chopped"], steps: ["In a pot, combine pork, water, onion, and tomatoes. Bring to a boil.", "Add radish and green chili peppers. Simmer for 10 minutes.", "Stir in tamarind paste and cook for another 5 minutes.", "Add string beans and cook until tender.", "Season with fish sauce, salt, and pepper to taste.", "Serve hot, garnished with green onions."] },
+        "Lechon Kawali": { ingredients: ["1 kg pork belly", "4 cups water", "1 onion, quartered", "4 cloves garlic, crushed", "2 bay leaves", "1 tsp peppercorns", "Salt to taste", "Oil for frying", "Vinegar and soy sauce (for dipping)"], steps: ["In a pot, combine pork belly, water, onion, garlic, bay leaves, peppercorns, and salt.", "Bring to a boil, then simmer for 1.5 to 2 hours until pork is tender.", "Remove pork from the pot and let it cool. Reserve the broth for soup.", "Once cool, score the skin of the pork belly and rub with salt.", "Heat oil in a deep pan. Fry the pork belly, skin side down, until the skin is crispy.", "Flip and fry the meat side until golden brown.", "Drain on paper towels. Serve with vinegar and soy sauce dip."] },
+        "Pancit Canton": { ingredients: ["250g egg noodles", "2 tbsp oil", "2 cloves garlic, minced", "1 onion, sliced", "1 cup chicken breast, sliced", "1 cup shrimp, peeled", "1 cup mixed vegetables", "2 tbsp soy sauce", "1 tbsp oyster sauce", "Salt and pepper to taste", "2 green onions, chopped"], steps: ["Soak egg noodles in hot water for 10 minutes. Drain and set aside.", "In a pan, heat oil. Sauté garlic and onion until fragrant.", "Add chicken and shrimp. Cook until no longer pink.", "Add mixed vegetables and stir-fry for 3-5 minutes.", "Add soaked noodles, soy sauce, oyster sauce, salt, and pepper. Toss to combine.", "Cook for another 3-5 minutes until noodles are heated through.", "Serve hot, garnished with green onions."] },
+        "Lumpiang Shanghai": { ingredients: ["500g ground pork", "1 small carrot, grated", "2 cloves garlic, minced", "Spring roll wrappers", "Oil for frying"], steps: ["Mix pork, carrot, garlic and seasonings; roll in wrappers.", "Deep-fry until golden and crispy.", "Serve with sweet chili or vinegar dip."] },
+        "Lechon": { ingredients: ["1 whole pig (about 10-12 kg)", "Marinade: 1 cup vinegar, 1 cup soy sauce, 1 head garlic (minced), 1 tbsp peppercorns, 2-3 bay leaves, salt to taste", "For basting: 1 cup oil, 1/2 cup vinegar, 1/2 cup soy sauce", "Lechon sauce (for serving)"], steps: ["Clean the pig, removing hair and innards. Rinse well.", "Marinate the pig in a mixture of vinegar, soy sauce, garlic, peppercorns, bay leaves, and salt for at least 3 hours, preferably overnight.", "Prepare a charcoal pit or a large roasting pan. If using an oven, preheat to 180°C (350°F).", "Stuff the pig's cavity with aromatic herbs, if desired. Sew or skewer the opening shut.", "Place the pig on a spit or a roasting rack. Roast over charcoal or in the oven, basting regularly with a mixture of oil, vinegar, and soy sauce.", "Cook for 3-4 hours, or until the skin is crispy and the meat is tender. Internal temperature should reach at least 75°C (165°F).", "Let it rest for 30 minutes before carving. Serve with lechon sauce." ] },
+        "Tinola": { ingredients: ["1 kg chicken, cut into pieces", "4 cups water", "1 onion, quartered", "4 cloves garlic, minced", "1 thumb-sized ginger, sliced", "2 cups papaya, sliced", "1 cup chili leaves (or spinach)", "2 tbsp fish sauce", "Salt and pepper to taste", "Green onions, chopped (for garnish)"], steps: ["In a pot, combine chicken, water, onion, and ginger. Bring to a boil.", "Add fish sauce, salt, and pepper. Simmer for 30 minutes or until chicken is cooked through.", "Add papaya and chili leaves. Cook for another 5-10 minutes until vegetables are tender.", "Adjust seasoning if needed. Serve hot, garnished with green onions."] },
+        "Bicol Express": { ingredients: ["500g pork belly, sliced", "1 cup coconut milk", "1/2 cup shrimp paste (bagoong)", "1 onion, chopped", "4 cloves garlic, minced", "2-3 green chili peppers, sliced", "1 red chili pepper, sliced (optional)", "1 tbsp ginger, minced", "Salt and pepper to taste", "2 tbsp oil"], steps: ["In a pot, heat oil. Sauté onion, garlic, and ginger until fragrant.", "Add pork belly. Cook until browned and fat is rendered.", "Add shrimp paste, coconut milk, and chili peppers. Stir well.", "Simmer for 30-40 minutes until pork is tender and sauce is thickened.", "Season with salt and pepper. Serve hot with rice."] },
+        "Kinilaw": { ingredients: ["500g fresh fish (like tuna or mackerel), cubed", "1/2 cup vinegar", "1/4 cup calamansi juice (or lemon juice)", "1 onion, finely chopped", "2-3 green chili peppers, sliced", "1 thumb-sized ginger, minced", "Salt and pepper to taste", "1/4 cup coconut milk (optional)"], steps: ["In a bowl, combine fish, vinegar, calamansi juice, onion, ginger, and chili peppers.", "Add salt and pepper to taste. Mix well.", "Cover and marinate in the refrigerator for at least 30 minutes.", "Serve cold or at room temperature, drizzled with coconut milk if desired."] },
+        "Pancit Palabok": { ingredients: ["250g rice noodles", "2 tbsp oil", "2 cloves garlic, minced", "1 onion, chopped", "1 cup pork, diced", "1/2 cup shrimp, peeled and deveined", "1/4 cup fish sauce", "2 cups chicken broth", "1 tbsp cornstarch mixed with 2 tbsp water (for thickening)", "Salt and pepper to taste", "Chicharrón (crispy pork skin), crushed (for topping)", "Boiled eggs, sliced (for garnish)", "Green onions, chopped (for garnish)"], steps: ["Soak rice noodles in hot water for 10 minutes. Drain and set aside.", "In a pan, heat oil. Sauté garlic and onion until fragrant.", "Add pork and shrimp. Cook until no longer pink.", "Stir in fish sauce and chicken broth. Bring to a boil.", "Add soaked noodles and cornstarch mixture. Toss to combine and thicken the sauce.", "Season with salt and pepper. Serve hot, topped with chicharrón, boiled eggs, and green onions."] },
+        "Bulalo": { ingredients: ["1 kg beef shank with bone marrow", "8 cups water", "1 onion, quartered", "4 cloves garlic, crushed", "2-3 bay leaves", "1 tsp peppercorns", "Salt to taste", "Vegetables: corn, potatoes, carrots, cabbage (optional)"], steps: ["In a large pot, combine beef shank, water, onion, garlic, bay leaves, peppercorns, and salt.", "Bring to a boil, then simmer for 2-3 hours until beef is tender and marrow is soft.", "Skim off any scum or fat that rises to the surface.", "Add vegetables if using. Cook until tender.", "Adjust seasoning if needed. Serve hot with rice."] },
+        "Pinakbet": { ingredients: ["250g pork belly, sliced", "1 cup water", "1/2 cup shrimp paste (bagoong)", "1 onion, chopped", "2 cloves garlic, minced", "1 cup pumpkin, cubed", "1 cup eggplant, sliced", "1 cup bitter melon (ampalaya), sliced", "1 cup string beans (sitaw)", "Salt and pepper to taste", "2 tbsp oil"], steps: ["In a pot, heat oil. Sauté onion, garlic, and pork until pork is browned.", "Add shrimp paste, water, and vegetables. Stir well.", "Simmer for 20-30 minutes until vegetables are tender and flavors are blended.", "Season with salt and pepper. Serve hot with rice."] },
+        "Dinakdakan": {
+          title: "Dinakdakan",
+          ingredients: [
+            "500g pork (cheek, ears, belly) — grilled or boiled then charred",
+            "50g pork liver (optional), diced",
+            "1 small red onion, chopped",
+            "3 tbsp mayonnaise (or mashed grilled pork brain for traditional flavor)",
+            "2 tbsp vinegar or calamansi juice",
+            "1-2 Thai chilies, chopped",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Grill or boil then char the pork pieces; chop into bite-size pieces.",
+            "If using liver, sauté briefly until cooked and dice.",
+            "Mix pork with onion, mayonnaise (or mashed brain), vinegar/calamansi and chilies.",
+            "Season with salt and pepper. Serve warm or at room temperature."
+          ]
+        },
+        "Tocino": {
+          title: "Tocino",
+          ingredients: [
+            "500g pork shoulder, sliced",
+            "1/2 cup brown sugar",
+            "2 tbsp salt",
+            "2 tbsp pineapple juice (optional)",
+            "1 tsp garlic powder",
+            "Pinch of curing salt (optional)",
+            "Black pepper to taste"
+          ],
+          steps: [
+            "Mix sugar, salt, pineapple juice, garlic powder and curing salt (if using) to make marinade.",
+            "Coat pork slices in the marinade and refrigerate for 8–12 hours or overnight.",
+            "Pan-fry slices over medium heat (no oil) until caramelized and cooked through. Serve with garlic rice."
+          ]
+        },
+        "Sisig": {
+          title: "Sisig",
+          ingredients: [
+            "500g pork (boiled belly, ears; or lechon kawali), chopped",
+            "100g pork liver, diced (optional)",
+            "1 small red onion, chopped",
+            "2 tbsp soy sauce or patis",
+            "2-3 tbsp calamansi or lemon juice",
+            "1-2 Thai chilies, chopped",
+            "2 tbsp mayonnaise (optional)",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Char or fry the pork pieces until crispy, then chop finely.",
+            "Sauté liver (if using) and mix with pork, add soy/patis and onions; cook briefly.",
+            "Finish with calamansi, chilies and mayo (if desired). Serve on a sizzling plate and squeeze more calamansi before eating."
+          ]
+        },
+        "Lomi": {
+          title: "Lomi",
+          ingredients: [
+            "250g fresh lomi (thick egg) noodles",
+            "200g pork, sliced",
+            "100g shrimp, peeled",
+            "1 cup cabbage, sliced",
+            "2 cloves garlic, minced",
+            "1 small onion, chopped",
+            "4 cups chicken broth",
+            "2 tbsp cornstarch + water (slurry)",
+            "2 eggs, beaten",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Sauté garlic, onion and pork until lightly browned.",
+            "Add broth and bring to a boil; add noodles and cook until nearly done.",
+            "Stir in vegetables, then add cornstarch slurry to thicken to a stew-like consistency.",
+            "Slowly stir in beaten eggs and shrimp until cooked. Season and serve hot."
+          ]
+        },
+        "Pancit Habhab": {
+          title: "Pancit Habhab",
+          ingredients: [
+            "250g miki or rice noodles",
+            "200g pork (minced or sliced)",
+            "1 small carrot, julienned",
+            "1/2 cup cabbage, shredded",
+            "2 cloves garlic, minced",
+            "1 small onion, chopped",
+            "2 tbsp soy sauce or patis",
+            "Banana leaf (optional, for serving)"
+          ],
+          steps: [
+            "Sauté garlic and onion, cook pork until done.",
+            "Add carrots and cabbage; stir-fry briefly.",
+            "Add noodles and soy/patis; toss until noodles absorb flavors and are cooked.",
+            "Serve traditionally on banana leaf and eat by hand (habhab)."
+          ]
+        },
+        "Laing": {
+          title: "Laing",
+          ingredients: [
+            "200g dried taro leaves (dried gabi leaves)",
+            "2 cups coconut milk",
+            "150g pork or shrimp (optional)",
+            "1 onion, chopped",
+            "3 cloves garlic, minced",
+            "2-3 red chilies, sliced",
+            "2 tbsp shrimp paste (bagoong) or salt"
+          ],
+          steps: [
+            "Sauté garlic and onion; add pork or shrimp if using and cook through.",
+            "Pour in coconut milk and simmer; add chilies.",
+            "Add dried taro leaves in batches, simmer on low until leaves are tender and coconut milk reduces. Season with bagoong to taste."
+          ]
+        },
+        "Arroz Caldo": {
+          title: "Arroz Caldo",
+          ingredients: ["1 cup glutinous rice or regular rice", "500g chicken pieces (preferably thigh)", "1 thumb ginger, julienned", "4 cloves garlic, minced", "1 onion, chopped", "6 cups chicken broth", "Fish sauce, salt and pepper to taste", "Fried garlic, chopped scallions and calamansi for topping"],
+          steps: ["Sauté garlic, onion and ginger until fragrant.", "Add chicken and rice; stir to coat and toast rice lightly.", "Pour in broth and simmer, stirring occasionally, until rice breaks down and porridge reaches desired thickness.", "Season with fish sauce. Serve topped with fried garlic, scallions and a squeeze of calamansi."]
+        },
+        "Hanging Rice (Puso)": {
+          ingredients: ["2 cups glutinous rice", "2.5 cups water or coconut milk", "1 tsp salt", "Coconut leaves (for wrapping)", "String or twine"],
+          steps: ["Rinse rice and cook with water/coconut milk until tender, stirring occasionally.", "Fold coconut leaves into a heart or pyramid shape.", "Fill leaves with cooked rice, fold edges to seal, and tie with string.", "Steam for 10-15 minutes until firm. Serve hot as an accompanying staple."]
+        },
+        "Chicken Halang-Halang": {
+          ingredients: ["500g chicken breast, sliced into long pieces", "2 onions, sliced lengthwise", "2 red bell peppers, sliced lengthwise", "2 tbsp soy sauce", "1 tbsp vinegar", "4 cloves garlic, minced", "1 tbsp butter or oil", "Salt and pepper to taste"],
+          steps: ["Thread chicken, onion and peppers alternately on skewers.", "Mix soy sauce, vinegar, garlic, salt and pepper for marinade.", "Brush skewers with marinade and grill over charcoal or under oven broiler until cooked through.", "Baste frequently with butter or oil while grilling."]
+        },
+        "La Paz Batchoy": {
+          ingredients: ["400g miki or egg noodles", "200g pork innards (liver, heart, kidney), diced", "100g pork shoulder, sliced", "50g chicharrón (crispy pork skin), crushed", "1 onion, chopped", "4 cloves garlic, minced", "6 cups pork or chicken broth", "Fish sauce, salt and pepper to taste", "Boiled eggs, sliced (for topping)", "Green onions, chopped (for garnish)"],
+          steps: ["Sauté garlic and onion; add pork shoulder and cook until lightly browned.", "Add pork innards and cook until cooked through, about 5-10 minutes.", "Add broth and bring to a boil; add noodles and cook until tender.", "Season with fish sauce, salt and pepper. Serve topped with chicharrón, eggs and green onions."]
+        },
+        "Binakol": {
+          ingredients: ["500g fresh fish (grouper or any firm white fish), whole or cut into large pieces", "2 cups coconut water", "1 thumb ginger, sliced", "1 onion, quartered", "2 green chili peppers", "Fish sauce to taste", "Salt and pepper", "Banana leaves (for wrapping)"],
+          steps: ["Place fish on banana leaves, add ginger, onion and chili peppers inside and around.", "Pour coconut water over the fish.", "Fold banana leaves to enclose, securing with toothpicks or string.", "Steam or boil for 30-40 minutes until fish is cooked through. Season with fish sauce."]
+        },
+        "Chicken Inasal": {
+          ingredients: ["1 kg chicken, cut into pieces", "1/2 cup vinegar", "4 cloves garlic, minced", "1 tbsp turmeric powder (or ginger-turmeric paste)", "2 tbsp soy sauce", "1 tbsp brown sugar", "2 tbsp oil", "Salt and pepper to taste", "Calamansi and salt for serving"],
+          steps: ["Mix vinegar, garlic, turmeric, soy sauce, sugar, oil, salt and pepper to make marinade.", "Marinate chicken for at least 30 minutes (preferably 2 hours).", "Grill over charcoal or under broiler until cooked through and slightly charred, basting with marinade.", "Serve hot with calamansi and salt for squeezing."]
+        },
+        "Diwal (Angel Wings Clam)": {
+          ingredients: ["500g small clams (diwal), cleaned and shelled", "3 tbsp butter", "6 cloves garlic, minced", "1/4 cup white wine or vinegar", "2 tbsp fish sauce", "Red chili flakes (optional)", "Salt and pepper to taste", "Parsley, chopped (optional)"],
+          steps: ["Heat butter in a pan, sauté garlic until fragrant.", "Add clams and cook for 2-3 minutes, stirring occasionally.", "Pour wine/vinegar and fish sauce; cook for another 3-5 minutes until clams open.", "Season with salt, pepper and chili flakes. Garnish with parsley and serve hot with rice."]
+        },
+        "Humba Bisaya": {
+          ingredients: ["800g pork (belly or shoulder), cubed", "1/4 cup soy sauce", "1/4 cup vinegar", "1/4 cup liver paste or mashed liver", "1/2 cup pineapple juice", "3 cloves garlic, minced", "1 onion, chopped", "1 tbsp brown sugar", "1 tsp black peppercorns", "2 tbsp oil", "Salt to taste"],
+          steps: ["In a pot, heat oil and sauté garlic and onion.", "Add pork and brown on all sides.", "Add soy sauce, vinegar, liver paste, pineapple juice, sugar and peppercorns.", "Bring to a boil, then simmer for 45 minutes until pork is tender and sauce thickens.", "Season with salt. Serve hot with rice."]
+        },
+        "Bacolod Back-Ribs": {
+          ingredients: ["1 kg pork back ribs", "1/2 cup brown sugar", "1/4 cup soy sauce", "1/4 cup vinegar", "4 cloves garlic, minced", "1 tbsp mustard (optional)", "1 tbsp paprika", "1 tsp black pepper", "1 tbsp oil"],
+          steps: ["Mix sugar, soy sauce, vinegar, garlic, mustard, paprika and pepper to make marinade.", "Marinate ribs for at least 2 hours or overnight.", "Grill ribs over charcoal or under broiler for 45-60 minutes, basting frequently with marinade.", "Ribs are done when meat is tender and caramelized. Serve hot."]
+        },
+        "Inadobong Pusit": {
+          ingredients: ["500g squid (pusit), cleaned and cut into rings", "1/2 cup vinegar", "1/4 cup soy sauce", "4 cloves garlic, minced", "1 onion, chopped", "1 thumb ginger, sliced", "2 bay leaves", "1 tsp peppercorns", "2 tbsp oil", "Salt and pepper to taste"],
+          steps: ["In a pot, heat oil and sauté garlic, onion and ginger.", "Add squid and cook for 3-5 minutes until it releases liquid.", "Add vinegar, soy sauce, bay leaves and peppercorns.", "Simmer for 20-30 minutes until squid is tender and flavors are absorbed.", "Season with salt and pepper. Serve hot with rice."]
+        },
+        "Paklay": {
+          ingredients: ["500g fish (mackerel, grouper or any white fish)", "2 cups mixed vegetables (onion, tomato, bell pepper, string beans)", "4 cloves garlic, minced", "1 thumb ginger, sliced", "1 tbsp turmeric powder", "2 tbsp vinegar", "1 tbsp fish sauce", "1 tbsp oil", "Salt and pepper to taste", "Aluminum foil for wrapping"],
+          steps: ["Prepare a large sheet of aluminum foil (about 30cm x 40cm).", "Layer fish, vegetables, garlic, ginger and turmeric on the foil.", "Drizzle with vinegar, fish sauce and oil. Season with salt and pepper.", "Fold foil to seal completely, creating a packet.", "Grill over charcoal or bake in oven at 200°C for 30-40 minutes.", "Carefully open foil (watch for hot steam) and serve in foil or transfer to a plate."]
+        },
+        "Tinolang Manok Bisaya": {
+          ingredients: ["1 kg chicken, cut into pieces", "6 cups water", "1 onion, quartered", "4 cloves garlic, minced", "1 thumb ginger, sliced", "2 cups papaya or sayote, sliced", "1 cup chili leaves or spinach", "2 tbsp fish sauce", "Salt and pepper to taste", "Green onions for garnish"],
+          steps: ["In a pot, combine chicken, water, onion, garlic and ginger. Bring to a boil.", "Add fish sauce, salt and pepper. Simmer for 25-30 minutes until chicken is cooked.", "Add papaya/sayote and chili leaves. Cook for another 5-10 minutes.", "Adjust seasoning. Serve hot, garnished with green onions and rice."]
+        },
+        "Pastil": {
+          ingredients: [
+            "2 cups cooked rice",
+            "1 cup shredded chicken adobo or beef",
+            "1 onion, chopped",
+            "2 cloves garlic, minced",
+            "2 tbsp soy sauce",
+            "Banana leaves for wrapping"
+          ],
+          steps: [
+            "Sauté onion and garlic, add shredded chicken and soy sauce. Cook for 2-3 minutes.",
+            "Place rice on banana leaf, top with chicken mixture.",
+            "Wrap and serve warm."
+          ]
+        },
+        "Satti": {
+          ingredients: [
+            "500g beef or chicken, cubed",
+            "Bamboo skewers",
+            "1 cup spicy satti sauce",
+            "Steamed rice"
+          ],
+          steps: [
+            "Thread meat onto skewers and grill until cooked.",
+            "Serve with spicy satti sauce and rice."
+          ]
+        },
+        "Pyanggang Manok": {
+          ingredients: [
+            "1 kg chicken, cut into serving pieces",
+            "1 cup coconut milk",
+            "1/2 cup burnt coconut meat, ground",
+            "1 onion, chopped",
+            "4 cloves garlic, minced",
+            "2 tbsp ginger, minced",
+            "2 tbsp turmeric powder",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Sauté onion, garlic, and ginger.",
+            "Add chicken, turmeric, and coconut milk. Simmer until chicken is cooked.",
+            "Stir in burnt coconut, season, and simmer until sauce thickens."
+          ]
+        },
+        "Beef Kulma": {
+          ingredients: [
+            "1 kg beef, cubed",
+            "1 cup coconut milk",
+            "1/2 cup peanuts, ground",
+            "2 potatoes, cubed",
+            "1 onion, chopped",
+            "4 cloves garlic, minced",
+            "2 tbsp curry powder",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Sauté onion and garlic, add beef and brown.",
+            "Add coconut milk, peanuts, curry powder, and potatoes.",
+            "Simmer until beef and potatoes are tender. Season to taste."
+          ]
+        },
+        "Biryani (Cotabato)": {
+          ingredients: [
+            "2 cups basmati rice",
+            "500g beef or chicken, cubed",
+            "1 onion, chopped",
+            "2 cloves garlic, minced",
+            "1 tbsp biryani spice mix",
+            "1 cup coconut milk",
+            "Salt and pepper to taste"
+          ],
+          steps: [
+            "Sauté onion and garlic, add meat and brown.",
+            "Add biryani spice, coconut milk, and rice.",
+            "Add water as needed, simmer until rice and meat are cooked."
+          ]
+        },
+      };
+
+      document.querySelectorAll('.recipe-card').forEach(card => {
+        const titleElem = card.querySelector('.recipe-title');
+        const title = (titleElem && titleElem.childNodes && titleElem.childNodes[0] && titleElem.childNodes[0].nodeType === Node.TEXT_NODE)
+          ? titleElem.childNodes[0].textContent.trim()
+          : (titleElem ? titleElem.textContent.trim() : '');
+        if (!card.querySelector('.view-recipe-btn')) {
+          const btn = document.createElement('button');
+          btn.className = 'view-recipe-btn';
+          btn.textContent = 'View Recipe';
+          btn.setAttribute('data-recipe', title);
+          btn.style.marginTop = '1em';
+          btn.style.padding = '0.5em 1em';
+          btn.style.background = '#007bff';
+          btn.style.color = '#fff';
+          btn.style.border = 'none';
+          btn.style.borderRadius = '4px';
+          btn.style.cursor = 'pointer';
+          card.querySelector('.recipe-content').appendChild(btn);
+        }
+      });
+
+      const modal = document.getElementById('recipe-modal');
+      const closeModal = document.querySelector('.close-modal');
+
+      document.querySelectorAll('.view-recipe-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const recipe = recipes[btn.getAttribute('data-recipe')];
+          if (recipe) {
+            document.getElementById('modal-title').textContent = btn.getAttribute('data-recipe');
+            const ingList = document.getElementById('modal-ingredients');
+            ingList.innerHTML = '';
+            recipe.ingredients.forEach(ing => {
+              const li = document.createElement('li');
+              li.textContent = ing;
+              ingList.appendChild(li);
+            });
+            const stepsList = document.getElementById('modal-steps');
+            stepsList.innerHTML = '';
+            recipe.steps.forEach(step => {
+              const li = document.createElement('li');
+              li.textContent = step;
+              stepsList.appendChild(li);
+            });
+            modal.style.display = 'block';
+          }
+        });
+      });
+
+      closeModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+      });
+
+      window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    });
+
+    // ===== NAVIGATION =====
+    const navLinks = document.querySelectorAll('.nav-link');
+    const sections = document.querySelectorAll('.content-section');
+
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = link.getAttribute('data-target');
+        navLinks.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+        sections.forEach(section => {
+          section.classList.remove('active');
+          if (section.id === target) {
+            section.classList.add('active');
+          }
+        });
+      });
+    });
+
+    // ===== FETCH USER DATA =====
+    async function fetchUserData(token) {
+      const me = await fetch('http://localhost:4000/api/me', {
+        headers: { Authorization: 'Bearer ' + token }
+      }).then(r => r.json());
+
+      return me;
+    }
+  </script>
+</body>
+</html>
