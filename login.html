@@ -388,6 +388,14 @@
       if (newToggle) newToggle.addEventListener('click', () => setMode(!isLogin));
     }
 
+    // Get backend URL (works in both local and production)
+    const getBackendUrl = () => {
+      if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        return 'http://localhost:5200';
+      }
+      return window.location.origin.replace(/:[0-9]+$/, '') + ':5200' || 'https://api.wendellsrecipe.com';
+    };
+
     // initialize toggle button
     setMode(true);
 
@@ -402,7 +410,7 @@
       if (isLogin) {
         // LOGIN
         try {
-          const res = await fetch('http://localhost:5200/api/login', {
+          const res = await fetch(getBackendUrl() + '/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -425,7 +433,7 @@
         if (password.length < 6) return showError('Password must be at least 6 characters.');
         if (password !== confirm) return showError('Passwords do not match.');
         try {
-          const res = await fetch('http://localhost:5200/api/register', {
+          const res = await fetch(getBackendUrl() + '/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, password })

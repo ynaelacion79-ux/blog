@@ -792,7 +792,13 @@
             }
             
             try {
-              const response = await fetch('http://localhost:5200/api/ratings', {
+              const getBackendUrl = () => {
+                if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                  return 'http://localhost:5200';
+                }
+                return window.location.origin.replace(/:[0-9]+$/, '') + ':5200' || 'https://api.wendellsrecipe.com';
+              };
+              const response = await fetch(getBackendUrl() + '/api/ratings', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1154,7 +1160,13 @@
 
     // ===== FETCH USER DATA =====
     async function fetchUserData(token) {
-      const me = await fetch('http://localhost:4000/api/me', {
+      const getBackendUrl = () => {
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+          return 'http://localhost:5200';
+        }
+        return window.location.origin.replace(/:[0-9]+$/, '') + ':5200' || 'https://api.wendellsrecipe.com';
+      };
+      const me = await fetch(getBackendUrl() + '/api/me', {
         headers: { Authorization: 'Bearer ' + token }
       }).then(r => r.json());
 
