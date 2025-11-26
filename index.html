@@ -51,44 +51,6 @@
   </style>
 </head>
 <body>
-<div id="auth-modal" style="position:fixed;z-index:2000;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;">
-  <div style="background:#fff;padding:2em;border-radius:10px;max-width:350px;width:100%;box-shadow:0 2px 10px rgba(0,0,0,0.2);">
-    <h2 id="auth-title">Login</h2>
-    <form id="auth-form">
-      <div class="form-group">
-        <input type="email" id="auth-email" placeholder="Email" required style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-name-group" style="display:none;">
-        <input type="text" id="auth-name" placeholder="Full name" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-username-group" style="display:none;">
-        <input type="text" id="auth-username" placeholder="Username (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-phone-group" style="display:none;">
-        <input type="tel" id="auth-phone" placeholder="Phone (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-location-group" style="display:none;">
-        <input type="text" id="auth-location" placeholder="Location (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-bio-group" style="display:none;">
-        <textarea id="auth-bio" placeholder="Short bio (optional)" rows="3" style="width:100%;padding:0.5em;margin-bottom:1em;"></textarea>
-      </div>
-      <div class="form-group" id="auth-avatar-group" style="display:none;">
-        <input type="url" id="auth-avatar" placeholder="Avatar image URL (optional)" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group">
-        <input type="password" id="auth-password" placeholder="Password" required style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <div class="form-group" id="auth-confirm-group" style="display:none;">
-        <input type="password" id="auth-confirm-password" placeholder="Confirm password" style="width:100%;padding:0.5em;margin-bottom:1em;">
-      </div>
-      <button type="submit" class="btn-submit" style="width:100%;margin-bottom:1em;">Login</button>
-    </form>
-    <p id="auth-switch" style="text-align:center;cursor:pointer;color:#007bff;">Don't have an account? Register</p>
-    <p id="auth-error" style="color:red;text-align:center;display:none;"></p>
-  </div>
-</div>
-
   <!-- Header -->
   <header>
     <div class="container">
@@ -107,8 +69,7 @@
             <li><a href="#" class="nav-link" data-target="recipes">Recipes</a></li>
             <li><a href="#" class="nav-link" data-target="about">About</a></li>
             <li><a href="#" class="nav-link" data-target="contact">Contact</a></li>
-            <li><button id="open-auth-btn" aria-label="Open login" style="background:none;border:none;color:#007bff;cursor:pointer;display:flex;align-items:center;gap:0.4rem;"><i class="fas fa-user" aria-hidden="true" style="font-size:1rem;"></i><span>Login / Register</span></button></li>
-            <li><button id="logout-btn" style="background:none;border:none;color:#007bff;cursor:pointer;display:none;">Logout</button></li>
+            <li><button id="logout-btn" style="background:none;border:none;color:#d93025;cursor:pointer;font-weight:600;padding:0;font-size:inherit;">Logout</button></li>
           </ul>
         </nav>
       </div>
@@ -721,147 +682,90 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-
-    // ===== AUTH MODAL LOGIC =====
-    const authModal = document.getElementById('auth-modal');
-    const authForm = document.getElementById('auth-form');
-    const authTitle = document.getElementById('auth-title');
-    const authSwitch = document.getElementById('auth-switch');
-    const authError = document.getElementById('auth-error');
-    let isLogin = true;
-
-    function showError(msg) {
-      authError.textContent = msg;
-      authError.style.display = 'block';
-    }
-
-    function clearError() {
-      authError.textContent = '';
-      authError.style.display = 'none';
-    }
-
-    authSwitch.addEventListener('click', () => {
-      isLogin = !isLogin;
-      authTitle.textContent = isLogin ? 'Login' : 'Register';
-      authForm.querySelector('button').textContent = isLogin ? 'Login' : 'Register';
-      authSwitch.textContent = isLogin ? "Don't have an account? Register" : "Already have an account? Login";
-      clearError();
-
-      const groups = ['auth-name-group', 'auth-confirm-group', 'auth-username-group', 'auth-phone-group', 'auth-location-group', 'auth-bio-group', 'auth-avatar-group'];
-      groups.forEach(id => document.getElementById(id).style.display = isLogin ? 'none' : '');
-      document.getElementById('auth-name').required = !isLogin;
-      document.getElementById('auth-confirm-password').required = !isLogin;
-    });
-
-    authForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearError();
-
-      const email = document.getElementById('auth-email').value.trim();
-      const password = document.getElementById('auth-password').value.trim();
-      const name = document.getElementById('auth-name')?.value.trim() || '';
-      const confirm = document.getElementById('auth-confirm-password')?.value.trim() || '';
-      const username = document.getElementById('auth-username')?.value.trim() || '';
-      const phone = document.getElementById('auth-phone')?.value.trim() || '';
-      const location = document.getElementById('auth-location')?.value.trim() || '';
-      const bio = document.getElementById('auth-bio')?.value.trim() || '';
-      const avatar = document.getElementById('auth-avatar')?.value.trim() || '';
-
+    // ===== SESSION-BASED AUTHENTICATION =====
+    // Session-based authentication helpers (backend JWT + sessionStorage)
+    function getCurrentUser() {
       try {
-        if (isLogin) {
-          const res = await fetch('http://localhost:4000/api/login', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          });
-          const data = await res.json();
-          // save data.token and data.user
-
-          authModal.style.display = 'none';
-          document.body.style.overflow = '';
-        } else {
-          if (!name) return showError('Please enter your full name.');
-          if (password.length < 6) return showError('Password must be at least 6 characters.');
-          if (password !== confirm) return showError('Passwords do not match.');
-
-          const res = await fetch('http://localhost:4000/api/register', {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ name, email, password })
-          });
-          const data = await res.json();
-          // save data.token to localStorage and use it for authenticated requests
-
-          try {
-            await updateProfile(auth.currentUser, { displayName: name, ...(avatar && { photoURL: avatar }) });
-          } catch (err) {
-            console.warn('updateProfile failed', err);
-          }
-
-          try {
-            await addDoc(collection(db, 'users'), {
-              uid: userCredential.user.uid,
-              name, username: username || null, phone: phone || null, location: location || null, bio: bio || null, avatar: avatar || null,
-              email, createdAt: serverTimestamp()
-            });
-          } catch (err) {
-            console.warn('Firestore save failed', err);
-          }
-
-          await signOut(auth);
-
-          isLogin = true;
-          authTitle.textContent = 'Login';
-          authForm.querySelector('button').textContent = 'Login';
-          authSwitch.textContent = "Don't have an account? Register";
-          ['auth-name-group', 'auth-confirm-group', 'auth-username-group', 'auth-phone-group', 'auth-location-group', 'auth-bio-group', 'auth-avatar-group'].forEach(id => document.getElementById(id).style.display = 'none');
-          document.getElementById('auth-password').value = '';
-          document.getElementById('auth-confirm-password').value = '';
-          document.getElementById('auth-name').required = false;
-          document.getElementById('auth-confirm-password').required = false;
-
-          authError.style.color = 'green';
-          showError('Registration successful. Please log in with your new account.');
-          setTimeout(() => { clearError(); authError.style.color = 'red'; }, 5000);
-        }
-      } catch (err) {
-        showError(err?.message?.replace('Firebase: ', '') || String(err));
+        const raw = sessionStorage.getItem('recipe_user');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
       }
-    });
+    }
 
-    // don't force the auth modal to show on page load; allow browsing without signing in
-
-    onAuthStateChanged(auth, (user) => {
-      const openAuthBtn = document.getElementById('open-auth-btn');
+    function setCurrentUser(user) {
       if (user) {
-        authModal.style.display = 'none';
-        document.body.style.overflow = '';
-        document.getElementById('logout-btn').style.display = '';
-        if (openAuthBtn) openAuthBtn.style.display = 'none';
-        document.getElementById('user-info').style.display = 'flex';
-        document.getElementById('user-name').textContent = user.displayName || user.email.split('@')[0];
-        if (user.photoURL) {
-          document.getElementById('user-avatar').src = user.photoURL;
-          document.getElementById('user-avatar').style.display = '';
+        // user may be an object returned from the server (without token)
+        if (typeof user === 'object') {
+          // store user object
+          sessionStorage.setItem('recipe_user', JSON.stringify(user));
+        } else {
+          // if passed a primitive, store as string
+          sessionStorage.setItem('recipe_user', String(user));
         }
       } else {
-        // keep the modal hidden by default for guests; allow browsing without signing in
-        authModal.style.display = 'none';
-        document.body.style.overflow = '';
-        document.getElementById('logout-btn').style.display = 'none';
-        if (openAuthBtn) openAuthBtn.style.display = '';
-        document.getElementById('user-info').style.display = 'none';
+        sessionStorage.removeItem('recipe_user');
+        sessionStorage.removeItem('recipe_token');
       }
-    });
-
-    document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
-    const openAuthBtn = document.getElementById('open-auth-btn');
-    if (openAuthBtn) {
-      openAuthBtn.addEventListener('click', () => {
-        authModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
-      });
     }
+
+    // Update UI to show logged-in user
+    function updateUIForLoggedInUser(user) {
+      const logoutBtn = document.getElementById('logout-btn');
+      const userInfo = document.getElementById('user-info');
+      const userName = document.getElementById('user-name');
+      const userAvatar = document.getElementById('user-avatar');
+
+      if (user) {
+        logoutBtn.style.display = 'inline-block';
+        userInfo.style.display = 'flex';
+        userName.textContent = user.name;
+        if (user.avatar) {
+          userAvatar.src = user.avatar;
+          userAvatar.style.display = 'inline-block';
+        } else {
+          userAvatar.style.display = 'none';
+        }
+      } else {
+        logoutBtn.style.display = 'none';
+        userInfo.style.display = 'none';
+      }
+    }
+
+    // Auth initialization on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check if user is already logged in
+      const currentUser = getCurrentUser();
+      if (!currentUser) {
+        // redirect unauthenticated users to the standalone login page
+        window.location.href = 'login.html';
+        return;
+      }
+      
+      // User is logged in, update UI
+      updateUIForLoggedInUser(currentUser);
+      
+      // Attach logout handler - make it bulletproof
+      setTimeout(() => {
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+          logoutBtn.type = 'button';
+          logoutBtn.removeAttribute('type');
+          logoutBtn.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Logout button clicked');
+            sessionStorage.removeItem('recipe_token');
+            sessionStorage.removeItem('recipe_user');
+            setTimeout(() => {
+              window.location.href = 'login.html';
+            }, 100);
+            return false;
+          };
+          console.log('Logout handler attached to button');
+        }
+      }, 100);
+    });
 
     // ===== STAR RATING & FIRESTORE =====
     document.addEventListener('DOMContentLoaded', () => {
@@ -879,11 +783,36 @@
           star.addEventListener('mouseleave', () => stars.forEach(s => s.classList.remove('hovered')));
           star.addEventListener('click', async () => {
             stars.forEach((s, i) => s.classList.toggle('selected', i <= idx));
+            
+            // Save rating to backend
+            const token = sessionStorage.getItem('recipe_token');
+            if (!token) {
+              alert('Please login to rate recipes');
+              return;
+            }
+            
             try {
-              await addDoc(collection(db, 'ratings'), { recipe: recipeTitle, rating: idx + 1, timestamp: serverTimestamp() });
-              alert(`You rated ${recipeTitle} ${idx + 1} star(s)!`);
+              const response = await fetch('http://localhost:5200/api/ratings', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({
+                  recipe_name: recipeTitle,
+                  rating: idx + 1
+                })
+              });
+              
+              const data = await response.json();
+              if (data.error) {
+                alert('Failed to save rating: ' + data.error);
+              } else {
+                alert('You rated ' + recipeTitle + ' ' + (idx + 1) + ' star(s)!');
+              }
             } catch (error) {
-              alert('Failed to save rating.');
+              console.error('Rating error:', error);
+              alert('Failed to save rating');
             }
           });
         });
