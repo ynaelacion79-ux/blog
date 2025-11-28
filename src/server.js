@@ -13,6 +13,9 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 
+// Serve static files from parent directory (HTML, CSS, images)
+app.use(express.static('../'));
+
 // PostgreSQL pool
 const pool = new Pool({
   host: process.env.DB_HOST || 'localhost',
@@ -282,6 +285,21 @@ app.get('/api/debug-users', async (req, res) => {
     console.error('Debug users error:', err);
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Serve index.html for root path
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '/../index.html');
+});
+
+// Serve login.html for /login
+app.get('/login', (req, res) => {
+  res.sendFile(__dirname + '/../login.html');
+});
+
+// Catch-all: serve index.html for any unknown routes (SPA support)
+app.get('*', (req, res) => {
+  res.sendFile(__dirname + '/../index.html');
 });
 
 // Start server
