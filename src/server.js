@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { Pool } = require('pg');
@@ -13,8 +14,8 @@ const app = express();
 app.use(express.json());
 app.use(cors({ origin: CORS_ORIGIN, credentials: true }));
 
-// Serve static files from parent directory (HTML, CSS, images)
-app.use(express.static('../'));
+// Serve static files from project root (one level above `src`)
+app.use(express.static(path.join(process.cwd(), '..')));
 
 // PostgreSQL pool
 const pool = new Pool({
@@ -289,17 +290,17 @@ app.get('/api/debug-users', async (req, res) => {
 
 // Serve index.html for root path
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/../index.html');
+  res.sendFile(path.join(process.cwd(), '..', 'index.html'));
 });
 
 // Serve login.html for /login
 app.get('/login', (req, res) => {
-  res.sendFile(__dirname + '/../login.html');
+  res.sendFile(path.join(process.cwd(), '..', 'login.html'));
 });
 
 // Catch-all: serve index.html for any unknown routes (SPA support)
 app.get('*', (req, res) => {
-  res.sendFile(__dirname + '/../index.html');
+  res.sendFile(path.join(process.cwd(), '..', 'index.html'));
 });
 
 // Start server
